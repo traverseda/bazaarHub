@@ -2,6 +2,7 @@
 A collection of small utilities that should make my life a lot easier.
 """
 import rpyc, os, cryptography, yaml
+from bazaar.identity import verifyArgs,PermissionDenied
 
 class ReadOnlyDict(dict):
     """

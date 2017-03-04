@@ -26,16 +26,7 @@ def verifyArgs(protectedFunction):
             else:
                 raise SigatureVerificationFailed("Fingerprint Mismatch")
 
-        verifier = public_key.verifier(
-            signature.hash,
-            padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
-            ),
-            hashes.SHA256()
-        )
-        verifier.update(sig.args+sig.kwargs+sig.salt)
-        verifier.verify()
+        verifySig(public_key,signature.hash,sig.args+sig.kwargs+sig.salt)
 
         args = rpyc.core.brine.load(signature.args)
         kwargs = rpyc.core.brine.load(signature.kwargs)
@@ -44,6 +35,21 @@ def verifyArgs(protectedFunction):
         return protectedFunction(*args,**kwargs,signature=signature)
     return wrapper
 
+def verifySig(public_key,signature,message):
+    """
+    Will raise `cryptography.exceptions.InvalidSignature` if signature
+    is invalid for message.
+    """
+    verifier = public_key.verifier(
+        signature.hash,
+        padding.PSS(
+            mgf=padding.MGF1(hashes.SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ),
+        hashes.SHA256()
+    )
+    verifier.update(message)
+    verifier.verify()
 
 class Identity(object):
     """
