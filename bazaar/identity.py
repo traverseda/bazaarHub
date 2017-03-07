@@ -144,7 +144,7 @@ class Identity(object):
 
         sig['salt']=self.getSalt()
         sig['args']=str(conn._box(tuple(args)))
-        sig['kwargs']=str(conn._box(tuple(kwargs)))
+        sig['kwargs']=str(conn._box(tuple(kwargs.items())))
         sig['hash']=self.sign(sig['args']+sig['kwargs']+sig['salt'])
 
         return tuple(ArgSig(**sig))
