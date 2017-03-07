@@ -4,7 +4,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding
 
 default_backend = cryptography.hazmat.backends.default_backend()
 
-ArgSig = collections.namedtuple('ArgSig', ['args','kwargs','salt','hash','identity','idFingerprint'])
+ArgSig = collections.namedtuple('ArgSig', ('args','kwargs','salt','hash','identity','idFingerprint'))
 
 class PermissionDenied(Exception):
     pass
@@ -13,7 +13,7 @@ class SigatureVerificationFailed(PermissionDenied):
 
 identityCache={}
 """
-We use the "identityCache" object to avoid round-trips.
+We use the "identityCache" to limit round-trips.
 """
 
 def verifyArgs(protectedFunction):
@@ -56,8 +56,13 @@ class Identity(object):
     A public key implementation that can used to to verify identities.
     This version accepts a file or filepath for persistance, as there's not much
     point in a pubkey system without persistance.
+
+    It is *not* type safe.
+
+    It requires an instance of whatever connection it's working over, as it does magic with
+    the connection channel. This is very sad, as it makes it a lot more annoying to work with.
     """
-    def __init__(self, keyPath, password=None):
+    def __init__(self, keyPath, conn, password=None):
         keyPath=os.path.expanduser(keyPath)
         keyPath=os.path.abspath(keyPath)
         if not os.path.isfile(keyPath):
@@ -138,10 +143,10 @@ class Identity(object):
         sig['idFingerprint']=self.fingerprint
 
         sig['salt']=self.getSalt()
-        sig['args']=rpyc.core.brine.dump(args)
-        sig['kwargs']=rpyc.core.brine.dump(kwargs)
+        sig['args']=str(conn._box(tuple(args)))
+        sig['kwargs']=str(conn._box(tuple(kwargs)))
         sig['hash']=self.sign(sig['args']+sig['kwargs']+sig['salt'])
 
-        return ArgSig(**sig)
+        return tuple(ArgSig(**sig))
         
         
