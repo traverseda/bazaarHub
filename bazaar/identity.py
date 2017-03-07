@@ -58,14 +58,10 @@ class Identity(object):
     point in a pubkey system without persistance.
     """
     def __init__(self, keyPath, password=None):
+        keyPath=os.path.expanduser(keyPath)
         keyPath=os.path.abspath(keyPath)
         if not os.path.isfile(keyPath):
             print("Generating new private key at "+keyPath)
-            if password:
-                print("Using password")
-            else:
-                password=""
-                print("Not using password")
              
             private_key = rsa.generate_private_key(
                 public_exponent=65537,
@@ -78,8 +74,10 @@ class Identity(object):
                     "format":serialization.PrivateFormat.PKCS8,
                 }
                 if password:
+                    print("Using password")
                     keyArgs['encryption_algorithm']=serialization.BestAvailableEncryption(password.encode("utf-8"))
                 else:
+                    print("Not using password")
                     keyArgs['encryption_algorithm']=serialization.NoEncryption()
 
                 pem = private_key.private_bytes(**keyArgs)
@@ -93,8 +91,9 @@ class Identity(object):
                 backend=default_backend
             )
         self.private_key=private_key
-        self.public_key=self.private.public_key()
-        self.fingerprint = hashlib.sha256(self.public_key).hexdigest()
+        self.public_key=self.private_key.public_key()
+        keyNum = str(self.public_key.public_numbers().n).encode("utf-8")
+        self.fingerprint = hashlib.sha256(keyNum).hexdigest()
 
     @property
     def exposed_public_key(self):
@@ -120,8 +119,10 @@ class Identity(object):
     def getSalt(self):
         """
         A salt is used to prevent replay attacks, among other things.
+        This salt does not work, and salt support is unimplemented right now.
+        But it's important enough that I figured I'd include it now.
         """
-        return str(int(time.time()))
+        return ""
 
     def signArgs(self, *args, **kwargs):
         """
